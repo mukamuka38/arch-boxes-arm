@@ -10,6 +10,7 @@ SERVICES=(ucd.service)
 
 function pre() {
   arch-chroot "${MOUNT}" /bin/bash -e <<EOF
+pacman -Sy --noconfirm --asdeps base-devel
 cd /tmp
 curl -O -J -L https://github.com/clearlinux/micro-config-drive/releases/download/v45/micro-config-drive-45.tar.xz
 tar xvf micro-config-drive-45.tar.xz
@@ -19,7 +20,7 @@ make
 make install
 cd /tmp
 rm -rf /tmp/micro-config-drive-45
-systemctl daemon-reload
+pacman -Qtdq | pacman -Rns --noconfirm -
 EOF
 }
 
