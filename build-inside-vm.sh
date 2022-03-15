@@ -8,7 +8,7 @@ shopt -s extglob
 readonly DEFAULT_DISK_SIZE="2G"
 readonly IMAGE="image.img"
 # shellcheck disable=SC2016
-readonly MIRROR='https://mirror.pkgbuild.com/$repo/os/$arch'
+readonly MIRROR='http://jp.mirror.archlinuxarm.org/$arch/$repo'
 
 function init() {
   readonly ORIG_PWD="${PWD}"
@@ -35,6 +35,7 @@ function cleanup() {
   fi
   if [ -n "${MOUNT:-}" ] && mountpoint -q "${MOUNT}"; then
     # We do not want risking deleting ex: the package cache
+    umount --recursive "${MOUNT}/boot" || exit 1
     umount --recursive "${MOUNT}" || exit 1
   fi
   if [ -n "${TMPDIR:-}" ]; then
@@ -47,15 +48,19 @@ trap cleanup EXIT
 function setup_disk() {
   truncate -s "${DEFAULT_DISK_SIZE}" "${IMAGE}"
   sgdisk --clear \
-    --new 1::+1M --typecode=1:ef02 \
+    --new 1::+200M --typecode=1:ef00 \
     --new 2::-0 --typecode=2:8300 \
     "${IMAGE}"
 
   LOOPDEV=$(losetup --find --partscan --show "${IMAGE}")
   # Partscan is racy
   wait_until_settled "${LOOPDEV}"
+  mkfs.vfat "${LOOPDEV}p1"
   mkfs.btrfs "${LOOPDEV}p2"
   mount -o compress-force=zstd "${LOOPDEV}p2" "${MOUNT}"
+  mkdir "${MOUNT}/boot"
+  mount "${LOOPDEV}p1" "${MOUNT}/boot"
+
 }
 
 # Install Arch Linux to the filesystem (bootstrap)
@@ -76,7 +81,7 @@ EOF
   echo "Server = ${MIRROR}" >mirrorlist
 
   # We use the hosts package cache
-  pacstrap -c -C pacman.conf -M "${MOUNT}" base linux grub openssh sudo btrfs-progs reflector
+  pacstrap -c -C pacman.conf -M "${MOUNT}" base linux-aarch64 grub openssh sudo btrfs-progs
   cp mirrorlist "${MOUNT}/etc/pacman.d/"
 }
 
@@ -94,7 +99,7 @@ function image_cleanup() {
   # So for the initial install we use the fallback initramfs, and
   # "autodetect" should add the relevant modules to the initramfs when
   # the user updates the kernel.
-  cp --reflink=always -a "${MOUNT}/boot/"{initramfs-linux-fallback.img,initramfs-linux.img}
+  #cp --reflink=always -a "${MOUNT}/boot/"{initramfs-linux-fallback.img,initramfs-linux.img}
 
   sync -f "${MOUNT}/etc/os-release"
   fstrim --verbose "${MOUNT}"

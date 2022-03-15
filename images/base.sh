@@ -66,11 +66,13 @@ systemctl enable pacman-init.service
 systemctl enable reflector-init.service
 EOF
 
-  # GRUB
-  arch-chroot "${MOUNT}" /usr/bin/grub-install --target=i386-pc "${LOOPDEV}"
-  sed -i 's/^GRUB_TIMEOUT=.*$/GRUB_TIMEOUT=1/' "${MOUNT}/etc/default/grub"
-  # setup unpredictable kernel names
-  sed -i 's/^GRUB_CMDLINE_LINUX=.*$/GRUB_CMDLINE_LINUX="net.ifnames=0"/' "${MOUNT}/etc/default/grub"
-  sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=compress-force=zstd\"/' "${MOUNT}/etc/default/grub"
-  arch-chroot "${MOUNT}" /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
+  ROOT_UUID="$(findmnt -fn -o UUID "${MOUNT}")"
+  BOOT_UUID="$(findmnt -fn -o UUID "${MOUNT}/boot")"
+  cat <<EOF >"${MOUNT}/etc/fstab"
+/dev/disk/by-uuid/${ROOT_UUID} / btrfs defaults 0 0
+/dev/disk/by-uuid/${BOOT_UUID} /boot vfat defaults 0 0
+EOF
+  cat <<EOF >"${MOUNT}/boot/startup.nsh"
+Image root=UUID=${ROOT_UUID} rw initrd=\initramfs-linux.img
+EOF
 }
