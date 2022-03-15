@@ -16,10 +16,10 @@ EOF
   # setup network
   cat <<EOF >"${MOUNT}/etc/systemd/network/eth0.network"
 [Match]
-Name=eth0
+Type=ether
 
 [Network]
-DHCP=ipv4
+DHCP=yes
 EOF
 
   # install vagrant ssh key

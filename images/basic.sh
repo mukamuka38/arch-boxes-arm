@@ -14,10 +14,10 @@ function pre() {
 
   cat <<EOF >"${MOUNT}/etc/systemd/network/80-dhcp.network"
 [Match]
-Name=eth0
+Type=ether
 
 [Network]
-DHCP=ipv4
+DHCP=yes
 EOF
 }
 
