@@ -1,12 +1,12 @@
 #!/bin/bash
 # shellcheck disable=SC2034,SC2154
-IMAGE_NAME="Arch-Linux-x86_64-cloudimg-${build_version}.qcow2"
+IMAGE_NAME="Arch-Linux-aarch64-cloudimg-${build_version}.qcow2"
 DISK_SIZE=""
 # The growpart module[1] requires the growpart program, provided by the
 # cloud-guest-utils package
 # [1] https://cloudinit.readthedocs.io/en/latest/topics/modules.html#growpart
-PACKAGES=(check parted json-glib curl libyaml base-devel)
-SERVICES=(ucd.service)
+PACKAGES=(check parted json-glib curl libyaml sudo openssh sshfs)
+SERVICES=(ucd.service sshd.service)
 
 function pre() {
   arch-chroot "${MOUNT}" /bin/bash -e <<EOF
