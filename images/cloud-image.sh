@@ -5,11 +5,22 @@ DISK_SIZE=""
 # The growpart module[1] requires the growpart program, provided by the
 # cloud-guest-utils package
 # [1] https://cloudinit.readthedocs.io/en/latest/topics/modules.html#growpart
-PACKAGES=(cloud-init cloud-guest-utils)
-SERVICES=(cloud-init-local.service cloud-init.service cloud-config.service cloud-final.service)
+PACKAGES=(check parted json-glib curl libyaml base-devel)
+SERVICES=(ucd.service)
 
 function pre() {
-  true
+  arch-chroot "${MOUNT}" /bin/bash -e <<EOF
+cd /tmp
+curl -O -J -L https://github.com/clearlinux/micro-config-drive/releases/download/v45/micro-config-drive-45.tar.xz
+tar xvf micro-config-drive-45.tar.xz
+cd micro-config-drive-45
+./configure
+make
+make install
+cd /tmp
+rm -rf /tmp/micro-config-drive-45
+systemctl daemon-reload
+EOF
 }
 
 function post() {

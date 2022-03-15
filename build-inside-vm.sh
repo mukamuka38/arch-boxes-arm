@@ -35,7 +35,7 @@ function cleanup() {
   fi
   if [ -n "${MOUNT:-}" ] && mountpoint -q "${MOUNT}"; then
     # We do not want risking deleting ex: the package cache
-    umount --recursive "${MOUNT}/boot" || exit 1
+    umount --recursive "${MOUNT}/boot" || true
     umount --recursive "${MOUNT}" || exit 1
   fi
   if [ -n "${TMPDIR:-}" ]; then
@@ -163,12 +163,12 @@ function create_image() {
   fi
 
   if [ 0 -lt "${#PACKAGES[@]}" ]; then
-    arch-chroot "${MOUNT}" /usr/bin/pacman -S --noconfirm "${PACKAGES[@]}"
+    arch-chroot "${MOUNT}" /usr/bin/pacman -Sy --noconfirm "${PACKAGES[@]}"
   fi
+  "${2}"
   if [ 0 -lt "${#SERVICES[@]}" ]; then
     arch-chroot "${MOUNT}" /usr/bin/systemctl enable "${SERVICES[@]}"
   fi
-  "${2}"
   image_cleanup
   unmount_image
   "${3}" "${tmp_image}" "${1}"
