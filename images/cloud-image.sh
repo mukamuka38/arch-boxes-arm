@@ -5,23 +5,25 @@ DISK_SIZE=""
 # The growpart module[1] requires the growpart program, provided by the
 # cloud-guest-utils package
 # [1] https://cloudinit.readthedocs.io/en/latest/topics/modules.html#growpart
-PACKAGES=(check parted json-glib curl libyaml sudo openssh sshfs)
-SERVICES=(ucd.service sshd.service)
+PACKAGES=(check parted json-glib curl libyaml sudo openssh sshfs cloud-guest-utils)
+SERVICES=(cloud-init-local.service cloud-init.service cloud-config.service cloud-final.service sshd.service)
 
 function pre() {
+  pushd "${TMPDIR}"
+  asp checkout cloud-init
+  pushd cloud-init/trunk
+  chown -R $SUDO_USER .
+  sudo -u $SUDO_USER sed -i 's/netplan //g' PKGBUILD
+  sudo -u $SUDO_USER ls -alh .
+  sudo -u $SUDO_USER makepkg -s --asdeps --nocheck --noconfirm
+  PACKAGE=$(find * -type f -name 'cloud-init*.pkg.tar.*')
+  cp "${PACKAGE}" "${MOUNT}/var/cache/pacman/"
+
   arch-chroot "${MOUNT}" /bin/bash -e <<EOF
-pacman -Sy --noconfirm --asdeps base-devel
-cd /tmp
-curl -O -J -L https://github.com/clearlinux/micro-config-drive/releases/download/v45/micro-config-drive-45.tar.xz
-tar xvf micro-config-drive-45.tar.xz
-cd micro-config-drive-45
-./configure
-make
-make install
-cd /tmp
-rm -rf /tmp/micro-config-drive-45
-pacman -Qtdq | pacman -Rns --noconfirm -
+  pacman -U "/var/cache/pacman/${PACKAGE}" --noconfirm
 EOF
+  popd
+  popd
 }
 
 function post() {
