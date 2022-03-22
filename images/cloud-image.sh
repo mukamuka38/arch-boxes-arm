@@ -5,7 +5,7 @@ DISK_SIZE=""
 # The growpart module[1] requires the growpart program, provided by the
 # cloud-guest-utils package
 # [1] https://cloudinit.readthedocs.io/en/latest/topics/modules.html#growpart
-PACKAGES=(check parted json-glib curl libyaml sudo openssh sshfs cloud-guest-utils)
+PACKAGES=(parted sudo openssh sshfs cloud-guest-utils)
 SERVICES=(cloud-init-local.service cloud-init.service cloud-config.service cloud-final.service sshd.service)
 
 function pre() {

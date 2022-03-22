@@ -81,7 +81,7 @@ EOF
   echo "Server = ${MIRROR}" >mirrorlist
 
   # We use the hosts package cache
-  pacstrap -c -C pacman.conf -M "${MOUNT}" base linux-aarch64 grub openssh sudo btrfs-progs
+  pacstrap -c -C pacman.conf -M "${MOUNT}" base linux-aarch64 openssh sudo btrfs-progs
   cp mirrorlist "${MOUNT}/etc/pacman.d/"
 }
 
