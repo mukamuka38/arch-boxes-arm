@@ -8,7 +8,7 @@ shopt -s extglob
 readonly DEFAULT_DISK_SIZE="2G"
 readonly IMAGE="image.img"
 # shellcheck disable=SC2016
-readonly MIRROR='http://jp.mirror.archlinuxarm.org/$arch/$repo'
+readonly MIRROR='http://os.archlinuxarm.org/$arch/$repo'
 
 function init() {
   readonly ORIG_PWD="${PWD}"

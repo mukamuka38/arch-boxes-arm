@@ -31,25 +31,7 @@ ConditionFirstBoot=yes
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/bin/pacman-key --init
-ExecStart=/usr/bin/pacman-key --populate archlinux
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-  # Add service for running reflector on first boot
-  cat <<EOF >"${MOUNT}/etc/systemd/system/reflector-init.service"
-[Unit]
-Description=Initializes mirrors for the VM
-After=network-online.target
-Wants=network-online.target
-Before=sshd.service cloud-final.service
-ConditionFirstBoot=yes
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+ExecStart=/usr/bin/pacman-key --populate archlinuxarm
 
 [Install]
 WantedBy=multi-user.target
@@ -63,7 +45,6 @@ systemctl enable systemd-networkd
 systemctl enable systemd-resolved
 systemctl enable systemd-timesyncd
 systemctl enable pacman-init.service
-systemctl enable reflector-init.service
 EOF
 
   ROOT_UUID="$(findmnt -fn -o UUID "${MOUNT}")"
