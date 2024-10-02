@@ -8,7 +8,7 @@ shopt -s extglob
 readonly DEFAULT_DISK_SIZE="2G"
 readonly IMAGE="image.img"
 # shellcheck disable=SC2016
-readonly MIRROR='http://os.archlinuxarm.org/$arch/$repo'
+readonly MIRROR='http://mirror.archlinuxarm.org/$arch/$repo'
 
 function init() {
   readonly ORIG_PWD="${PWD}"
@@ -48,7 +48,7 @@ trap cleanup EXIT
 function setup_disk() {
   truncate -s "${DEFAULT_DISK_SIZE}" "${IMAGE}"
   sgdisk --clear \
-    --new 1::+200M --typecode=1:ef00 \
+    --new 1::+500M --typecode=1:ef00 \
     --new 2::-0 --typecode=2:8300 \
     "${IMAGE}"
 
@@ -67,7 +67,7 @@ function setup_disk() {
 function bootstrap() {
   cat <<EOF >pacman.conf
 [options]
-Architecture = auto
+Architecture = aarch64
 
 [core]
 Include = mirrorlist
@@ -81,7 +81,7 @@ EOF
   echo "Server = ${MIRROR}" >mirrorlist
 
   # We use the hosts package cache
-  pacstrap -c -C pacman.conf -M "${MOUNT}" base linux-aarch64 openssh sudo btrfs-progs
+  pacstrap -c -C pacman.conf -M "${MOUNT}" base linux-aarch64 archlinuxarm-keyring openssh sudo btrfs-progs
   cp mirrorlist "${MOUNT}/etc/pacman.d/"
 }
 

@@ -9,21 +9,9 @@ PACKAGES=(parted sudo openssh sshfs cloud-guest-utils)
 SERVICES=(cloud-init-local.service cloud-init.service cloud-config.service cloud-final.service sshd.service)
 
 function pre() {
-  pushd "${TMPDIR}"
-  asp checkout cloud-init
-  pushd cloud-init/trunk
-  chown -R $SUDO_USER .
-  sudo -u $SUDO_USER sed -i 's/netplan //g' PKGBUILD
-  sudo -u $SUDO_USER ls -alh .
-  sudo -u $SUDO_USER makepkg -s --asdeps --nocheck --noconfirm
-  PACKAGE=$(find * -type f -name 'cloud-init*.pkg.tar.*')
-  cp "${PACKAGE}" "${MOUNT}/var/cache/pacman/"
-
-  arch-chroot "${MOUNT}" /bin/bash -e <<EOF
-  pacman -U "/var/cache/pacman/${PACKAGE}" --noconfirm
-EOF
-  popd
-  popd
+  local CLOUD_INIT_PACKAGE=`curl -fs https://archive.archlinux.org/packages/c/cloud-init/ | grep -Eo 'cloud-init-[0-9]{2}(\.[0-9]*)*-[0-9]*-any.pkg.tar.zst' | tail -n 1`
+  curl -f  https://archive.archlinux.org/packages/c/cloud-init/${CLOUD_INIT_PACKAGE} -o ${MOUNT}/var/cache/pacman/${CLOUD_INIT_PACKAGE}
+  arch-chroot "${MOUNT}" /usr/bin/pacman -U --noconfirm /var/cache/pacman/${CLOUD_INIT_PACKAGE}
 }
 
 function post() {
