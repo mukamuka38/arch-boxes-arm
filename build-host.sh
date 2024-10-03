@@ -4,7 +4,7 @@
 # nounset: "Treat unset variables and parameters [...] as an error when performing parameter expansion."
 # errexit: "Exit immediately if [...] command exits with a non-zero status."
 set -o nounset -o errexit
-readonly MIRROR="https://mirror.pkgbuild.com"
+readonly MIRROR="http://mirror.archlinuxarm.org/"
 
 function init() {
   readonly ORIG_PWD="${PWD}"
@@ -26,13 +26,13 @@ trap cleanup EXIT
 
 # Use local Arch iso or download the latest iso and extract the relevant files
 function prepare_boot() {
-  if LOCAL_ISO="$(ls "${ORIG_PWD}/"archlinux-*-x86_64.iso 2>/dev/null)"; then
+  if LOCAL_ISO="$(ls "${ORIG_PWD}/"archlinuxarm-*-aarch64.iso 2>/dev/null)"; then
     echo "Using local iso: ${LOCAL_ISO}"
     ISO="${LOCAL_ISO}"
   fi
 
   if [ -z "${LOCAL_ISO}" ]; then
-    LATEST_ISO="$(curl -fs "${MIRROR}/iso/latest/" | grep -Eo 'archlinux-[0-9]{4}\.[0-9]{2}\.[0-9]{2}-x86_64.iso' | head -n 1)"
+    LATEST_ISO="$(curl -fs "${MIRROR}/iso/latest/" | grep -Eo 'archlinuxarm-[0-9]{4}\.[0-9]{2}\.[0-9]{2}-aarch64.iso' | head -n 1)"
     if [ -z "${LATEST_ISO}" ]; then
       echo "Error: Couldn't find latest iso'"
       exit 1
@@ -43,7 +43,7 @@ function prepare_boot() {
 
   # We need to extract the kernel and initrd so we can set a custom cmdline:
   # console=ttyS0, so the kernel and systemd sends output to the serial.
-  xorriso -osirrox on -indev "${ISO}" -extract arch/boot/x86_64 .
+  xorriso -osirrox on -indev "${ISO}" -extract arch/boot/aarch64 .
   ISO_VOLUME_ID="$(xorriso -indev "${ISO}" |& awk -F : '$1 ~ "Volume id" {print $2}' | tr -d "' ")"
 }
 
@@ -51,17 +51,18 @@ function start_qemu() {
   # Used to communicate with qemu
   mkfifo guest.out guest.in
   # We could use a sparse file but we want to fail early
-  fallocate -l 4G scratch-disk.img
+  fallocate -l 5G scratch-disk.img || mkfile -n 5G scratch-disk.img
 
-  { qemu-system-x86_64 \
-    -machine accel=kvm:tcg \
+  { qemu-system-aarch64 \
+    -machine virt \
+    -cpu cortex-a53 \
     -smp 4 \
-    -m 2048 \
+    -m 4096 \
     -net nic \
     -net user \
-    -kernel vmlinuz-linux \
+    -kernel Image.gz \
     -initrd initramfs-linux.img \
-    -append "archisobasedir=arch archisolabel=${ISO_VOLUME_ID} cow_spacesize=2G ip=dhcp net.ifnames=0 console=ttyS0 mirror=${MIRROR}" \
+    -append "archisobasedir=arch archisolabel=${ISO_VOLUME_ID} cow_spacesize=2G ip=dhcp net.ifnames=0 console=ttyAMA0 mirror=${MIRROR}" \
     -drive file=scratch-disk.img,format=raw,if=virtio \
     -drive file="${ISO}",format=raw,if=virtio,media=cdrom,read-only \
     -virtfs "local,path=${ORIG_PWD},mount_tag=host,security_model=none" \
@@ -104,6 +105,8 @@ function main() {
   prepare_boot
   start_qemu
 
+  sleep 30
+
   # Login
   expect "archiso login:"
   send "root\n"
@@ -133,8 +136,11 @@ function main() {
   send "curl -sSo /dev/null ${MIRROR}\n"
   expect "# "
 
+  send "echo 'Server = https://jp.mirror.archlinuxarm.org/\$arch/\$repo/' > /etc/pacman.d/mirrorlist\n"
+  expect "# "
+
   # Install required packages
-  send "pacman -Syu --ignore linux --noconfirm qemu-headless jq\n"
+  send "pacman -Syu --ignore linux --noconfirm qemu-img jq\n"
   expect "# " 120 # (10/14) Updating module dependencies...
 
   ## Start build and copy output to local disk
