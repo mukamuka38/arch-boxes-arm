@@ -10,6 +10,7 @@ SERVICES=(cloud-init-local.service cloud-init.service cloud-config.service cloud
 
 function pre() {
   local CLOUD_INIT_PACKAGE=`curl -fs https://archive.archlinux.org/packages/c/cloud-init/ | grep -Eo 'cloud-init-[0-9]{2}(\.[0-9]*)*-[0-9]*-any.pkg.tar.zst' | tail -n 1`
+  CLOUD_INIT_PACKAGE="cloud-init-24.2-1-any.pkg.tar.zst"
   curl -f  https://archive.archlinux.org/packages/c/cloud-init/${CLOUD_INIT_PACKAGE} -o ${MOUNT}/var/cache/pacman/${CLOUD_INIT_PACKAGE}
   arch-chroot "${MOUNT}" /usr/bin/pacman -U --noconfirm /var/cache/pacman/${CLOUD_INIT_PACKAGE}
 }
